@@ -69,6 +69,7 @@ export class JoinSpecDefinition extends FeatureDefinition {
     joinField.addArgument('graph', new NonNullType(graphEnum));
     joinField.addArgument('requires', joinFieldSet);
     joinField.addArgument('provides', joinFieldSet);
+    joinField.addArgument('moving', schema.stringType());
     if (!this.isV01()) {
       joinField.addArgument('type', schema.stringType());
       joinField.addArgument('external', schema.booleanType());
@@ -140,7 +141,14 @@ export class JoinSpecDefinition extends FeatureDefinition {
     return this.directive(schema, 'implements');
   }
 
-  fieldDirective(schema: Schema): DirectiveDefinition<{graph: string, requires?: string, provides?: string, type?: string, external?: boolean}> {
+  fieldDirective(schema: Schema): DirectiveDefinition<{
+    graph: string,
+    requires?: string,
+    provides?: string,
+    type?: string,
+    external?: boolean,
+    moving?: string,
+  }> {
     return this.directive(schema, 'field')!;
   }
 

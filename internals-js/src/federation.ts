@@ -63,6 +63,8 @@ export const extendsDirectiveName = 'extends';
 export const externalDirectiveName = 'external';
 export const requiresDirectiveName = 'requires';
 export const providesDirectiveName = 'provides';
+export const movingDirectiveName = 'moving';
+
 // TODO: so far, it seems we allow tag to appear without a corresponding definition, so we add it as a built-in.
 // If we change our mind, we should change this.
 export const tagDirectiveName = 'tag';
@@ -90,7 +92,8 @@ const FEDERATION_DIRECTIVES = [
   externalDirectiveName,
   requiresDirectiveName,
   providesDirectiveName,
-  tagDirectiveName
+  tagDirectiveName,
+  movingDirectiveName,
 ];
 const FEDERATION_ROOT_FIELDS = [
   serviceFieldName,
@@ -321,7 +324,7 @@ function isFieldSatisfyingInterface(field: FieldDefinition<ObjectType | Interfac
  */
 function validateInterfaceRuntimeImplementationFieldsTypes(
   itf: InterfaceType,
-  externalTester: ExternalTester, 
+  externalTester: ExternalTester,
   errorCollector: GraphQLError[],
 ): void {
   const runtimeTypes = itf.possibleRuntimeTypes();
@@ -374,7 +377,7 @@ export class FederationBuiltIns extends BuiltIns {
 
     // Note that we allow @key on interfaces in the definition to not break backward compatibility, because it has historically unfortunately be declared this way, but
     // @key is actually not supported on interfaces at the moment, so if if is "used" then it is rejected.
-    const keyDirective = this.addBuiltInDirective(schema, keyDirectiveName)
+    const keyDirective = this.addBuiltInDirective({ schema, name: keyDirectiveName })
       .addLocations(DirectiveLocation.OBJECT, DirectiveLocation.INTERFACE);
     // TODO: I believe fed 1 does not mark key repeatable and relax validation to accept repeating non-repeatable directive.
     // Do we want to perpetuate this? (Obviously, this is for historical reason and some graphQL implementations still do
@@ -383,20 +386,24 @@ export class FederationBuiltIns extends BuiltIns {
     keyDirective.repeatable = true;
     keyDirective.addArgument('fields', fieldSetType);
 
-    this.addBuiltInDirective(schema, extendsDirectiveName)
+    this.addBuiltInDirective({ schema, name: extendsDirectiveName })
       .addLocations(DirectiveLocation.OBJECT, DirectiveLocation.INTERFACE);
 
-    this.addBuiltInDirective(schema, externalDirectiveName)
+    this.addBuiltInDirective({ schema, name: externalDirectiveName })
       .addLocations(DirectiveLocation.OBJECT, DirectiveLocation.FIELD_DEFINITION);
 
     for (const name of [requiresDirectiveName, providesDirectiveName]) {
-      this.addBuiltInDirective(schema, name)
+      this.addBuiltInDirective({ schema, name })
         .addLocations(DirectiveLocation.FIELD_DEFINITION)
         .addArgument('fields', fieldSetType);
     }
 
-    const directive = this.addBuiltInDirective(schema, 'tag').addLocations(...tagLocations);
+    const directive = this.addBuiltInDirective({ schema, name: 'tag' }).addLocations(...tagLocations);
     directive.addArgument("name", new NonNullType(schema.stringType()));
+
+    this.addBuiltInDirective({ schema, name: movingDirectiveName, requireJoin: true })
+      .addLocations('FIELD_DEFINITION')
+      .addArgument("to", new NonNullType(schema.stringType()));
   }
 
   prepareValidation(schema: Schema) {
@@ -586,6 +593,10 @@ export class FederationBuiltIns extends BuiltIns {
 
   tagDirective(schema: Schema): DirectiveDefinition<{name: string}> {
     return this.getTypedDirective(schema, tagDirectiveName);
+  }
+
+  movingDirective(schema: Schema): DirectiveDefinition<{to: any}> {
+    return this.getTypedDirective(schema, movingDirectiveName);
   }
 
   maybeUpdateSubgraphDocument(schema: Schema, document: DocumentNode): DocumentNode {

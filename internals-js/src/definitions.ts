@@ -806,18 +806,18 @@ export class BuiltIns {
 
   addBuiltInDirectives(schema: Schema) {
     for (const name of ['include', 'skip']) {
-      this.addBuiltInDirective(schema, name)
+      this.addBuiltInDirective({ schema, name })
         .addLocations(DirectiveLocation.FIELD, DirectiveLocation.FRAGMENT_SPREAD, DirectiveLocation.INLINE_FRAGMENT)
         .addArgument('if', new NonNullType(schema.booleanType()));
     }
-    this.addBuiltInDirective(schema, 'deprecated')
+    this.addBuiltInDirective({ schema, name: 'deprecated' })
       .addLocations(
         DirectiveLocation.FIELD_DEFINITION,
         DirectiveLocation.ENUM_VALUE,
         DirectiveLocation.ARGUMENT_DEFINITION,
         DirectiveLocation.INPUT_FIELD_DEFINITION,
       ).addArgument('reason', schema.stringType(), 'No longer supported');
-    this.addBuiltInDirective(schema, 'specifiedBy')
+    this.addBuiltInDirective({ schema, name: 'specifiedBy' })
       .addLocations(DirectiveLocation.SCALAR)
       .addArgument('url', new NonNullType(schema.stringType()));
   }
@@ -969,8 +969,16 @@ export class BuiltIns {
     return schema.addType(new UnionType(name, true));
   }
 
-  protected addBuiltInDirective(schema: Schema, name: string): DirectiveDefinition {
-    return schema.addDirectiveDefinition(new DirectiveDefinition(name, true));
+  protected addBuiltInDirective({
+    schema,
+    name,
+    requireJoin,
+  }: {
+    schema: Schema,
+    name: string,
+    requireJoin?: boolean,
+  }): DirectiveDefinition {
+    return schema.addDirectiveDefinition(new DirectiveDefinition({ name, isBuiltIn: true, requireJoin }));
   }
 
   protected addBuiltInField(parentType: ObjectType, name: string, type: OutputType): FieldDefinition<ObjectType> {
@@ -1344,7 +1352,7 @@ export class Schema {
   addDirectiveDefinition(name: string): DirectiveDefinition;
   addDirectiveDefinition(directive: DirectiveDefinition): DirectiveDefinition;
   addDirectiveDefinition(directiveOrName: string | DirectiveDefinition): DirectiveDefinition {
-    const definition = typeof directiveOrName === 'string' ? new DirectiveDefinition(directiveOrName) : directiveOrName;
+    const definition = typeof directiveOrName === 'string' ? new DirectiveDefinition({ name: directiveOrName }) : directiveOrName;
     const existing = this.directive(definition.name);
     // Note that we allow the schema to define a built-in manually (and the manual definition will shadow the
     // built-in one). It's just that validation will ensure the definition ends up the one expected.
@@ -2463,10 +2471,22 @@ export class DirectiveDefinition<TApplicationArgs extends {[key: string]: any} =
   private readonly _args: MapWithCachedArrays<string, ArgumentDefinition<DirectiveDefinition>> = new MapWithCachedArrays();
   repeatable: boolean = false;
   private readonly _locations: DirectiveLocation[] = [];
+  isBuiltIn: boolean;
+  requireJoin: boolean; // if the directive is present, a join field will be created in the supergraph
   private readonly _referencers: Set<Directive<SchemaElement<any, any>, TApplicationArgs>> = new Set();
 
-  constructor(name: string, readonly isBuiltIn: boolean = false) {
+  constructor({
+    name,
+    requireJoin = false,
+    isBuiltIn = false,
+  }: {
+    name: string,
+    requireJoin?: boolean,
+    isBuiltIn?: boolean,
+  }) {
     super(name);
+    this.isBuiltIn = isBuiltIn;
+    this.requireJoin = requireJoin;
   }
 
   get coordinate(): string {

@@ -401,7 +401,7 @@ class Merger {
           continue;
         }
         if (!this.merged.directive(directive.name)) {
-          this.merged.addDirectiveDefinition(new DirectiveDefinition(directive.name));
+          this.merged.addDirectiveDefinition(new DirectiveDefinition({ name: directive.name }));
         }
       }
     }
@@ -825,7 +825,16 @@ class Merger {
     return sources.some((s, i) => s !== undefined && this.isExternal(i, s));
   }
 
+  private validateMoving(sources: (FieldDefinition<any> | undefined)[]): boolean {
+
+    for (let i = 0; i < sources.length; i += 1) {
+
+    }
+    return false;
+  }
+
   private mergeField(sources: (FieldDefinition<any> | undefined)[], dest: FieldDefinition<any>) {
+    console.log('MERGING', dest.name);
     if (sources.every((s, i) => s === undefined || this.isExternal(i, s))) {
       const definingSubgraphs = sources.map((source, i) => source ? this.names[i] : undefined).filter(s => s !== undefined) as string[];
       const nodes = sources.map(source => source?.sourceAST).filter(s => s !== undefined) as ASTNode[];
@@ -947,6 +956,7 @@ class Merger {
     //   1) the field exists in all sources having the field parent type,
     //   2) none of the field instance has a @requires or @provides.
     //   3) none of the field is @external.
+    //   4) none of the directives force a join field
     for (const [idx, source] of sources.entries()) {
       if (source) {
         if (this.isExternal(idx, source)
@@ -962,7 +972,11 @@ class Merger {
         }
       }
     }
-    return false;
+
+    // if there is a source containing a directive that requires a join
+    return sources
+      .some((source) => source?.appliedDirectives
+        .some((directive) => directive.definition?.requireJoin));
   }
 
   private addJoinField<T extends FieldDefinition<ObjectType | InterfaceType> | InputFieldDefinition>(
@@ -985,10 +999,17 @@ class Merger {
         graph: name,
         requires: this.getFieldSet(source, federationBuiltIns.requiresDirective(this.subgraphsSchema[idx])),
         provides: this.getFieldSet(source, federationBuiltIns.providesDirective(this.subgraphsSchema[idx])),
+        moving: this.getMovingFields(source, federationBuiltIns.movingDirective(this.subgraphsSchema[idx])),
         type: allTypesEqual ? undefined : source.type?.toString(),
         external: external ? true : undefined,
       });
     }
+  }
+
+  private getMovingFields(element: SchemaElement<any, any>, directive: DirectiveDefinition<{to: string}>): string | undefined {
+    const applications = element.appliedDirectivesOf(directive);
+    assert(applications.length <= 1, () => `Found more than one application of ${directive} on ${element}`);
+    return applications.length === 0 ? undefined : applications[0].arguments().to;
   }
 
   private getFieldSet(element: SchemaElement<any, any>, directive: DirectiveDefinition<{fields: string}>): string | undefined {
