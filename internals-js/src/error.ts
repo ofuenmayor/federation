@@ -274,6 +274,11 @@ const SATISFIABILITY_ERROR = makeCodeDefinition(
   'Subgraphs can be merged, but the resulting supergraph API would have queries that cannot be satisfied by those subgraphs.',
 );
 
+const MULTIPLE_MOVING_ERROR = makeCodeDefinition(
+  'MULTIPLE_MOVING_ERROR',
+  'Field is marked with `@moving` directive in multiple subgraphs.',
+);
+
 export const ERROR_CATEGORIES = {
   DIRECTIVE_FIELDS_MISSING_EXTERNAL,
   DIRECTIVE_UNSUPPORTED_ON_INTERFACE,
@@ -322,6 +327,7 @@ export const ERRORS = {
   EXTERNAL_MISSING_ON_BASE,
   INTERFACE_FIELD_IMPLEM_TYPE_MISMATCH,
   SATISFIABILITY_ERROR,
+  MULTIPLE_MOVING_ERROR,
 };
 
 const codeDefByCode = Object.values(ERRORS).reduce((obj: {[code: string]: ErrorCodeDefinition}, codeDef: ErrorCodeDefinition) => { obj[codeDef.code] = codeDef; return obj; }, {});

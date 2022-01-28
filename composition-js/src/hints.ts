@@ -124,6 +124,12 @@ export const hintInconsistentArgumentPresence = new HintID(
   'the argument with mismatched types'
 );
 
+export const hintDestinationSubgraphDoesNotExist = new HintID(
+  'DestinationSubgraphDoesNotExist',
+  'Destination subgraph specified with @moving directive does not exist',
+  'the argument with non-existent subgraph'
+);
+
 export class CompositionHint {
   public readonly nodes?: readonly SubgraphASTNode[];
 
