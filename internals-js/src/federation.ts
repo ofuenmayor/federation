@@ -402,7 +402,7 @@ export class FederationBuiltIns extends BuiltIns {
     directive.addArgument("name", new NonNullType(schema.stringType()));
 
     this.addBuiltInDirective({ schema, name: movingDirectiveName, requireJoin: true })
-      .addLocations('FIELD_DEFINITION')
+      .addLocations(DirectiveLocation.FIELD_DEFINITION)
       .addArgument("to", new NonNullType(schema.stringType()));
   }
 
