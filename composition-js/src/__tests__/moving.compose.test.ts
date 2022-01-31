@@ -2,11 +2,10 @@ import { printSchema } from '@apollo/federation-internals';
 import { composeServices } from '../compose';
 import gql from 'graphql-tag';
 import './matchers';
-import { assertCompositionSuccess, schemas } from './compose.test';
+import { assertCompositionSuccess, schemas, errors } from './compose.test';
 
 describe('composition involving @moving directive', () => {
   it('@moving but not yet moved', () => {
-
     const subgraph1 = {
       name: 'Subgraph1',
       url: 'https://Subgraph1',
@@ -102,7 +101,6 @@ describe('composition involving @moving directive', () => {
   });
 
   it('finished @moving', () => {
-
     const subgraph1 = {
       name: 'Subgraph1',
       url: 'https://Subgraph1',
@@ -196,5 +194,40 @@ describe('composition involving @moving directive', () => {
         a: Int
       }
     `);
+  });
+
+  it('multiple moving error', () => {
+    const subgraph1 = {
+      name: 'Subgraph1',
+      url: 'https://Subgraph1',
+      typeDefs: gql`
+        type Query {
+          t: T
+        }
+
+        type T @key(fields: "k") {
+          k: ID
+          a: Int @moving(to: "Subgraph2")
+        }
+      `
+    }
+
+    const subgraph2 = {
+      name: 'Subgraph2',
+      url: 'https://Subgraph2',
+      typeDefs: gql`
+        type T @key(fields: "k") {
+          k: ID
+          a: Int @moving(to: "Subgraph1")
+        }
+      `
+    }
+
+    const result = composeServices([subgraph1, subgraph2]);
+    expect(result.errors?.length).toBe(1);
+    expect(result.errors).toBeDefined();
+    expect(errors(result)).toStrictEqual([
+      ['MULTIPLE_MOVING_ERROR', `Field T.a on subgraph 'Subgraph2' has been previously marked with directive @moving in subgraph 'Subgraph1'`],
+    ]);
   });
 });

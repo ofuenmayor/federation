@@ -9,7 +9,7 @@ export function assertCompositionSuccess(r: CompositionResult): asserts r is Com
   }
 }
 
-function errors(r: CompositionResult): [string, string][] {
+export function errors(r: CompositionResult): [string, string][] {
   return r.errors?.map(e => [e.extensions.code as string, e.message]) ?? [];
 }
 
