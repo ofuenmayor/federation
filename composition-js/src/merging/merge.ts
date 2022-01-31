@@ -80,6 +80,7 @@ import {
   hintInconsistentDescription,
   hintDestinationSubgraphDoesNotExist,
   hintMovedFieldCanBeRemoved,
+  hintMovedToCannotReferenceSelf,
 } from "../hints";
 
 const coreSpec = CORE_VERSIONS.latest();
@@ -887,8 +888,15 @@ class Merger {
           sources[idx]!.coordinate,
         ));
       }
+
+      if (destinationSubgraphName === name) {
+        this.hints.push(new CompositionHint(
+          hintMovedToCannotReferenceSelf,
+          `Moving field '${sources[idx]!.coordinate}' destination is its own subgraph '${name}'`,
+          sources[dest.idx]!.coordinate,
+        ));
+      } else if (dest !== undefined) {
       // If dest exists, than the field is already defined in the destination subgraph
-      if (dest !== undefined) {
         this.hints.push(new CompositionHint(
           hintMovedFieldCanBeRemoved,
           `Moving field '${sources[idx]!.coordinate}' can be safely removed from subgraph '${name}'`,

@@ -20,6 +20,9 @@ import {
   hintInconsistentExecutionDirectiveLocations,
   hintInconsistentArgumentPresence,
   hintInconsistentDescription,
+  hintDestinationSubgraphDoesNotExist,
+  hintMovedToCannotReferenceSelf,
+  hintMovedFieldCanBeRemoved,
 } from '../hints';
 import { MergeResult, mergeSubgraphs } from '../merging';
 
@@ -603,4 +606,79 @@ test('hints on inconsistent description for field', () => {
     + '  I don\'t know what I\'m doing\n'
     + '  """'
   );
-})
+});
+
+describe('hint tests related to the @moving directive', () => {
+  it('hint when destination subgraph does not exist', () => {
+    const subgraph1 = gql`
+      type Query {
+        a: Int
+      }
+
+      type T @key(fields: "id"){
+        id: Int
+        f: Int @moving(to: "Subgraph3")
+      }
+    `;
+
+    const subgraph2 = gql`
+    type T @key(fields: "id"){
+      id: Int
+    }
+    `;
+    const result = mergeDocuments(subgraph1, subgraph2);
+    expect(result).toRaiseHint(
+      hintDestinationSubgraphDoesNotExist,
+      `Destination subgraph 'Subgraph3' for field 'T.f' moving from subgraph 'Subgraph1' does not exist`,
+    );
+  });
+
+  it('hint when destination subgraph is self', () => {
+    const subgraph1 = gql`
+      type Query {
+        a: Int
+      }
+
+      type T @key(fields: "id"){
+        id: Int
+        f: Int @moving(to: "Subgraph1")
+      }
+    `;
+
+    const subgraph2 = gql`
+    type T @key(fields: "id"){
+      id: Int
+    }
+    `;
+    const result = mergeDocuments(subgraph1, subgraph2);
+    expect(result).toRaiseHint(
+      hintMovedToCannotReferenceSelf,
+      `Moving field 'T.f' destination is its own subgraph 'Subgraph1'`,
+    );
+  });
+
+  it('hint when moved field can be removed', () => {
+    const subgraph1 = gql`
+      type Query {
+        a: Int
+      }
+
+      type T @key(fields: "id"){
+        id: Int
+        f: Int @moving(to: "Subgraph2")
+      }
+    `;
+
+    const subgraph2 = gql`
+    type T @key(fields: "id"){
+      id: Int
+      f: Int
+    }
+    `;
+    const result = mergeDocuments(subgraph1, subgraph2);
+    expect(result).toRaiseHint(
+      hintMovedFieldCanBeRemoved,
+      `Moving field 'T.f' can be safely removed from subgraph 'Subgraph1'`,
+    );
+  });
+});

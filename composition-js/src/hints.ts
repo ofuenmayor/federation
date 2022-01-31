@@ -135,6 +135,13 @@ export const hintMovedFieldCanBeRemoved = new HintID(
   'Field with @moving directive exists in destination subgraph, it can be safely removed',
   'the moved field'
 );
+
+export const hintMovedToCannotReferenceSelf = new HintID(
+  'MovedToCannotReferenceSelf',
+  'Field with @moving directive must reference a different subgraph other than the one it is defined in',
+  'the moved field'
+);
+
 export class CompositionHint {
   public readonly nodes?: readonly SubgraphASTNode[];
 
