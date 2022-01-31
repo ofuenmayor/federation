@@ -3,7 +3,7 @@ import { CompositionResult, composeServices, CompositionSuccess } from '../compo
 import gql from 'graphql-tag';
 import './matchers';
 
-function assertCompositionSuccess(r: CompositionResult): asserts r is CompositionSuccess {
+export function assertCompositionSuccess(r: CompositionResult): asserts r is CompositionSuccess {
   if (r.errors) {
     throw new Error(`Expected composition to succeed but got errors:\n${r.errors.join('\n\n')}`);
   }
@@ -14,7 +14,7 @@ function errors(r: CompositionResult): [string, string][] {
 }
 
 // Returns [the supergraph schema, its api schema, the extracted subgraphs]
-function schemas(result: CompositionSuccess): [Schema, Schema, Subgraphs] {
+export function schemas(result: CompositionSuccess): [Schema, Schema, Subgraphs] {
   // Note that we could user `result.schema`, but reparsing to ensure we don't lose anything with printing/parsing.
   const schema = buildSchema(result.supergraphSdl);
   expect(schema.isCoreSchema()).toBeTruthy();

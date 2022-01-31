@@ -902,8 +902,8 @@ class Merger {
           `Moving field '${sources[idx]!.coordinate}' can be safely removed from subgraph '${name}'`,
           sources[dest.idx]!.coordinate,
         ));
+        return name;
       }
-      return name;
     }
     return undefined;
   }
