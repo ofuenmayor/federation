@@ -130,6 +130,11 @@ export const hintDestinationSubgraphDoesNotExist = new HintID(
   'the argument with non-existent subgraph'
 );
 
+export const hintMovedFieldCanBeRemoved = new HintID(
+  'MovedFieldCanBeRemoved',
+  'Field with @moving directive exists in destination subgraph, it can be safely removed',
+  'the moved field'
+);
 export class CompositionHint {
   public readonly nodes?: readonly SubgraphASTNode[];
 

@@ -79,6 +79,7 @@ import {
   hintInconsistentArgumentPresence,
   hintInconsistentDescription,
   hintDestinationSubgraphDoesNotExist,
+  hintMovedFieldCanBeRemoved,
 } from "../hints";
 
 const coreSpec = CORE_VERSIONS.latest();
@@ -834,35 +835,67 @@ class Merger {
   private validateMoving(sources: (FieldDefinition<any> | undefined)[]): string | undefined {
     // For now, assume that @moving and @shareable are incompatible
     // For any field, we can't have more than one @moving directive in any subgraph
-    let movingIdx: number | undefined = undefined;
-    let destinationSubgraph = '';
-    const nameMap: { [key: string]: boolean } = {}; // subgraphs that have the field defined
-    sources.forEach((source, idx) => {
-      if (source !== undefined) {
-        nameMap[this.names[idx]] = true;
-        const movingDirective = source.appliedDirectives.find(directive => directive.definition && directive.definition.name === movingDirectiveName);
-        if (movingDirective) {
-          if (movingIdx !== undefined) {
-            this.errors.push(ERRORS.MULTIPLE_MOVING_ERROR.err({
-              message: `Field ${source.coordinate} on subgraph '${this.names[idx]}' has been previously marked with directive @moving in subgraph '${this.names[movingIdx]}'`,
-            }));
-          } else {
-            movingIdx = idx;
-            destinationSubgraph = movingDirective.arguments().to;
-          }
+    type MappedValue = {
+      idx: number,
+      name: string,
+      movingDirective: Directive<FieldDefinition<any>> | undefined,
+    };
+
+    type ReduceResultType = {
+      subgraphsWithMoving: string[],
+      subgraphMap: { [key: string]: MappedValue },
+    };
+
+    // convert sources to a map so we don't have to keep scanning through the array to find a source
+    const { subgraphsWithMoving, subgraphMap } = sources.map((source, idx) => {
+      if (!source) {
+        return undefined;
+      }
+      return {
+        idx,
+        name: this.names[idx],
+        movingDirective: source.appliedDirectives.find(directive => directive.definition && directive.definition.name === movingDirectiveName),
+      };
+    }).reduce((acc: ReduceResultType, elem) => {
+      if (elem !== undefined) {
+        acc.subgraphMap[elem.name] = elem;
+        if (elem.movingDirective !== undefined) {
+          acc.subgraphsWithMoving.push(elem.name);
         }
       }
-    });
-    if (movingIdx !== undefined) {
-      if (nameMap[destinationSubgraph] !== undefined) {
-        return this.names[movingIdx];
-      } else {
+      return acc;
+    }, { subgraphsWithMoving: [], subgraphMap: {} });
+
+    // If the field has the @moving directive in more than one subgraph, create an error
+    if (subgraphsWithMoving.length > 1) {
+      const { name, idx } = subgraphMap[subgraphsWithMoving[0]];
+      for (let i = 1; i < subgraphsWithMoving.length; i += 1) {
+        this.errors.push(ERRORS.MULTIPLE_MOVING_ERROR.err({
+          message: `Field ${sources[idx]?.coordinate} on subgraph '${subgraphsWithMoving[i]}' has been previously marked with directive @moving in subgraph '${name}'`,
+        }));
+      }
+    } else if (subgraphsWithMoving.length === 1) {
+      const { name, idx, movingDirective } = subgraphMap[subgraphsWithMoving[0]];
+      const destinationSubgraphName = movingDirective?.arguments()?.to;
+      const dest = subgraphMap[destinationSubgraphName];
+
+      // If moving to a subgraph that doesn't exist, raise a hint in case the name is incorrect
+      if (!this.names.includes(destinationSubgraphName)) {
         this.hints.push(new CompositionHint(
           hintDestinationSubgraphDoesNotExist,
-          'dest does not exist',
-          sources[movingIdx]!.coordinate,
+          `Destination subgraph '${destinationSubgraphName}' for field '${sources[idx]!.coordinate}' moving from subgraph '${name}' does not exist`,
+          sources[idx]!.coordinate,
         ));
       }
+      // If dest exists, than the field is already defined in the destination subgraph
+      if (dest !== undefined) {
+        this.hints.push(new CompositionHint(
+          hintMovedFieldCanBeRemoved,
+          `Moving field '${sources[idx]!.coordinate}' can be safely removed from subgraph '${name}'`,
+          sources[dest.idx]!.coordinate,
+        ));
+      }
+      return name;
     }
     return undefined;
   }
