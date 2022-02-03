@@ -872,7 +872,7 @@ class Merger {
       const { name, idx } = subgraphMap[subgraphsWithMoving[0]];
       for (let i = 1; i < subgraphsWithMoving.length; i += 1) {
         this.errors.push(ERRORS.MULTIPLE_MOVING_ERROR.err({
-          message: `Field ${sources[idx]?.coordinate} on subgraph '${subgraphsWithMoving[i]}' has been previously marked with directive @moving in subgraph '${name}'`,
+          message: `Field '${sources[idx]?.coordinate}' on subgraph '${subgraphsWithMoving[i]}' has been previously marked with directive @moving in subgraph '${name}'`,
         }));
       }
     } else if (subgraphsWithMoving.length === 1) {
@@ -892,14 +892,14 @@ class Merger {
       if (destinationSubgraphName === name) {
         this.hints.push(new CompositionHint(
           hintMovedToCannotReferenceSelf,
-          `Moving field '${sources[idx]!.coordinate}' destination is its own subgraph '${name}'`,
+          `Source and destination subgraphs '${name}' the same for moving field '${sources[idx]!.coordinate}'`,
           sources[dest.idx]!.coordinate,
         ));
       } else if (dest !== undefined) {
       // If dest exists, than the field is already defined in the destination subgraph
         this.hints.push(new CompositionHint(
           hintMovedFieldCanBeRemoved,
-          `Moving field '${sources[idx]!.coordinate}' can be safely removed from subgraph '${name}'`,
+          `Field '${sources[idx]!.coordinate}' has been successfully moved and can be safely removed from subgraph '${name}'`,
           sources[dest.idx]!.coordinate,
         ));
         return name;
