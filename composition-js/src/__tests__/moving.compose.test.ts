@@ -227,7 +227,7 @@ describe('composition involving @moving directive', () => {
     expect(result.errors?.length).toBe(1);
     expect(result.errors).toBeDefined();
     expect(errors(result)).toStrictEqual([
-      ['MULTIPLE_MOVING_ERROR', `Field T.a on subgraph 'Subgraph2' has been previously marked with directive @moving in subgraph 'Subgraph1'`],
+      ['MULTIPLE_MOVING_ERROR', `Field 'T.a' on subgraph 'Subgraph2' has been previously marked with directive @moving in subgraph 'Subgraph1'`],
     ]);
   });
 });

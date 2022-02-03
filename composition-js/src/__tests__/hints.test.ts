@@ -653,7 +653,7 @@ describe('hint tests related to the @moving directive', () => {
     const result = mergeDocuments(subgraph1, subgraph2);
     expect(result).toRaiseHint(
       hintMovedToCannotReferenceSelf,
-      `Moving field 'T.f' destination is its own subgraph 'Subgraph1'`,
+      `Source and destination subgraphs 'Subgraph1' the same for moving field 'T.f'`,
     );
   });
 
@@ -678,7 +678,7 @@ describe('hint tests related to the @moving directive', () => {
     const result = mergeDocuments(subgraph1, subgraph2);
     expect(result).toRaiseHint(
       hintMovedFieldCanBeRemoved,
-      `Moving field 'T.f' can be safely removed from subgraph 'Subgraph1'`,
+      `Field 'T.f' has been successfully moved and can be safely removed from subgraph 'Subgraph1'`,
     );
   });
 });
