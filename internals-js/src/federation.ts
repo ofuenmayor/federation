@@ -377,7 +377,7 @@ export class FederationBuiltIns extends BuiltIns {
 
     // Note that we allow @key on interfaces in the definition to not break backward compatibility, because it has historically unfortunately be declared this way, but
     // @key is actually not supported on interfaces at the moment, so if if is "used" then it is rejected.
-    const keyDirective = this.addBuiltInDirective({ schema, name: keyDirectiveName })
+    const keyDirective = this.addBuiltInDirective(schema, keyDirectiveName)
       .addLocations(DirectiveLocation.OBJECT, DirectiveLocation.INTERFACE);
     // TODO: I believe fed 1 does not mark key repeatable and relax validation to accept repeating non-repeatable directive.
     // Do we want to perpetuate this? (Obviously, this is for historical reason and some graphQL implementations still do
@@ -386,22 +386,22 @@ export class FederationBuiltIns extends BuiltIns {
     keyDirective.repeatable = true;
     keyDirective.addArgument('fields', fieldSetType);
 
-    this.addBuiltInDirective({ schema, name: extendsDirectiveName })
+    this.addBuiltInDirective(schema, extendsDirectiveName)
       .addLocations(DirectiveLocation.OBJECT, DirectiveLocation.INTERFACE);
 
-    this.addBuiltInDirective({ schema, name: externalDirectiveName })
+    this.addBuiltInDirective(schema, externalDirectiveName)
       .addLocations(DirectiveLocation.OBJECT, DirectiveLocation.FIELD_DEFINITION);
 
     for (const name of [requiresDirectiveName, providesDirectiveName]) {
-      this.addBuiltInDirective({ schema, name })
+      this.addBuiltInDirective(schema, name)
         .addLocations(DirectiveLocation.FIELD_DEFINITION)
         .addArgument('fields', fieldSetType);
     }
 
-    const directive = this.addBuiltInDirective({ schema, name: 'tag' }).addLocations(...tagLocations);
+    const directive = this.addBuiltInDirective(schema, 'tag').addLocations(...tagLocations);
     directive.addArgument("name", new NonNullType(schema.stringType()));
 
-    this.addBuiltInDirective({ schema, name: movedDirectiveName, requireJoin: true })
+    this.addBuiltInDirective(schema, movedDirectiveName)
       .addLocations(DirectiveLocation.FIELD_DEFINITION)
       .addArgument("from", new NonNullType(schema.stringType()));
   }

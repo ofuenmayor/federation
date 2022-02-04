@@ -174,9 +174,6 @@ export function extractSubgraphsFromSupergraph(supergraph: Schema): Subgraphs {
               if (args.provides) {
                 subgraphField.applyDirective('provides', {'fields': args.provides});
               }
-              if (args.moving) {
-                subgraphField.applyDirective('moving', {'to': args.moving });
-              }
               if (args.external) {
                 subgraphField.applyDirective('external');
               }

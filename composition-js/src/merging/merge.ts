@@ -404,7 +404,7 @@ class Merger {
           continue;
         }
         if (!this.merged.directive(directive.name)) {
-          this.merged.addDirectiveDefinition(new DirectiveDefinition({ name: directive.name }));
+          this.merged.addDirectiveDefinition(new DirectiveDefinition(directive.name));
         }
       }
     }
@@ -829,16 +829,16 @@ class Merger {
   }
 
   /**
-   * Validates whether or not the use of the moving directive is correct.
-   * return value
+   * Validates whether or not the use of the @moved directive is correct.
+   * return a list of subgraphs to ignore for the current field
    */
-  private validateMoving(sources: (FieldDefinition<any> | undefined)[]): string[] {
+  private validateMoved(sources: (FieldDefinition<any> | undefined)[], { coordinate }: FieldDefinition<any>): string[] {
     // For now, assume that @moving and @shareable are incompatible
     // For any field, we can't have more than one @moving directive in any subgraph
     type MappedValue = {
       idx: number,
       name: string,
-      movingDirective: Directive<FieldDefinition<any>> | undefined,
+      movedDirective: Directive<FieldDefinition<any>> | undefined,
     };
 
     type ReduceResultType = {
@@ -855,12 +855,12 @@ class Merger {
       return {
         idx,
         name: this.names[idx],
-        movingDirective: source.appliedDirectives.find(directive => directive.definition && directive.definition.name === movedDirectiveName),
+        movedDirective: source.appliedDirectives.find(directive => directive.definition && directive.definition.name === movedDirectiveName),
       };
     }).reduce((acc: ReduceResultType, elem) => {
       if (elem !== undefined) {
         acc.subgraphMap[elem.name] = elem;
-        if (elem.movingDirective !== undefined) {
+        if (elem.movedDirective !== undefined) {
           acc.subgraphsWithMoving.push(elem.name);
         }
       }
@@ -868,27 +868,27 @@ class Merger {
     }, { subgraphsWithMoving: [], subgraphMap: {} });
 
     subgraphsWithMoving.forEach((subgraphName) => {
-      const { idx, movingDirective } = subgraphMap[subgraphName];
-      const sourceSubgraphName = movingDirective?.arguments()?.from;
+      const { movedDirective } = subgraphMap[subgraphName];
+      const sourceSubgraphName = movedDirective?.arguments()?.from;
       if (!this.names.includes(sourceSubgraphName)) {
         this.hints.push(new CompositionHint(
           hintFromSubgraphDoesNotExist,
-          `Source subgraph '${sourceSubgraphName}' for field '${sources[idx]!.coordinate}' on subgraph '${subgraphName}' does not exist`,
-          sources[idx]!.coordinate,
+          `Source subgraph '${sourceSubgraphName}' for field '${coordinate}' on subgraph '${subgraphName}' does not exist`,
+          coordinate,
         ));
       } else if (sourceSubgraphName === subgraphName) {
         this.errors.push(ERRORS.MOVED_FROM_SELF_ERROR.err({
-          message: `Source and destination subgraphs '${sourceSubgraphName}' the same for moving field '${sources[idx]!.coordinate}'`,
+          message: `Source and destination subgraphs '${sourceSubgraphName}' the same for moving field '${coordinate}'`,
         }));
       } else if (subgraphsWithMoving.includes(sourceSubgraphName)) {
         this.errors.push(ERRORS.MOVED_SOURCE_IS_ALSO_MOVED_ERROR.err({
-          message: `Field '${sources[idx]?.coordinate}' on subgraph '${subgraphName}' has been previously marked with directive @moved in subgraph '${sourceSubgraphName}'`,
+          message: `Field '${coordinate}' on subgraph '${subgraphName}' has been previously marked with directive @moved in subgraph '${sourceSubgraphName}'`,
         }));
       } else if (subgraphMap[sourceSubgraphName] === undefined) {
         this.hints.push(new CompositionHint(
           hintMovedDirectiveCanBeRemoved,
-          `Field '${sources[idx]!.coordinate}' on subgraph '${subgraphName}' has been successfully moved and directive can be removed`,
-          sources[idx]!.coordinate,
+          `Field '${coordinate}' on subgraph '${subgraphName}' has been successfully moved and directive can be removed`,
+          coordinate,
         ));
       }
       subgraphsToIgnore.push(sourceSubgraphName);
@@ -922,7 +922,7 @@ class Merger {
     if (this.hasExternal(sources)) {
       this.validateExternalFields(sources, dest, allTypesEqual);
     }
-    const movedFromSubgraph = this.validateMoving(sources);
+    const movedFromSubgraph = this.validateMoved(sources, dest);
     this.addJoinField(sources, dest, allTypesEqual, movedFromSubgraph);
   }
 
@@ -1007,7 +1007,8 @@ class Merger {
   private needsJoinField<T extends FieldDefinition<ObjectType | InterfaceType> | InputFieldDefinition>(
     sources: (T | undefined)[],
     parentName: string,
-    allTypesEqual: boolean
+    allTypesEqual: boolean,
+    subgraphsToSkip: string[],
   ): boolean {
     // If not all the types are equal, then we need to put a join__field to preserve the proper type information.
     if (!allTypesEqual) {
@@ -1018,7 +1019,7 @@ class Merger {
     //   1) the field exists in all sources having the field parent type,
     //   2) none of the field instance has a @requires or @provides.
     //   3) none of the field is @external.
-    //   4) none of the directives force a join field
+    //   4) we are skipping a subgraph
     for (const [idx, source] of sources.entries()) {
       if (source) {
         if (this.isExternal(idx, source)
@@ -1035,10 +1036,7 @@ class Merger {
       }
     }
 
-    // if there is a source containing a directive that requires a join
-    return sources
-      .some((source) => source?.appliedDirectives
-        .some((directive) => directive.definition?.requireJoin));
+    return subgraphsToSkip.length > 0;
   }
 
   private addJoinField<T extends FieldDefinition<ObjectType | InterfaceType> | InputFieldDefinition>(
@@ -1047,7 +1045,7 @@ class Merger {
     allTypesEqual: boolean,
     subgraphsToSkip: string[] = [],
   ) {
-    if (!this.needsJoinField(sources, dest.parent.name, allTypesEqual)) {
+    if (!this.needsJoinField(sources, dest.parent.name, allTypesEqual, subgraphsToSkip)) {
       return;
     }
     const joinFieldDirective = joinSpec.fieldDirective(this.merged);
@@ -1063,18 +1061,11 @@ class Merger {
           graph: name,
           requires: this.getFieldSet(source, federationBuiltIns.requiresDirective(this.subgraphsSchema[idx])),
           provides: this.getFieldSet(source, federationBuiltIns.providesDirective(this.subgraphsSchema[idx])),
-          moving: this.getMovingFields(source, federationBuiltIns.movedDirective(this.subgraphsSchema[idx])),
           type: allTypesEqual ? undefined : source.type?.toString(),
           external: external ? true : undefined,
         });
       }
     }
-  }
-
-  private getMovingFields(element: SchemaElement<any, any>, directive: DirectiveDefinition<{to: string}>): string | undefined {
-    const applications = element.appliedDirectivesOf(directive);
-    assert(applications.length <= 1, () => `Found more than one application of ${directive} on ${element}`);
-    return applications.length === 0 ? undefined : applications[0].arguments().to;
   }
 
   private getFieldSet(element: SchemaElement<any, any>, directive: DirectiveDefinition<{fields: string}>): string | undefined {

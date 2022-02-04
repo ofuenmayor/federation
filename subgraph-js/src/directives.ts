@@ -76,11 +76,11 @@ export const TagDirective = new GraphQLDirective({
   },
 });
 
-export const MovingDirective = new GraphQLDirective({
-  name: 'moving',
+export const MovedDirective = new GraphQLDirective({
+  name: 'moved',
   locations: [DirectiveLocation.FIELD_DEFINITION],
   args: {
-    to: {
+    from: {
       type: new GraphQLNonNull(GraphQLString),
     },
   },
@@ -92,7 +92,7 @@ export const federationDirectives = [
   ExternalDirective,
   RequiresDirective,
   ProvidesDirective,
-  MovingDirective,
+  MovedDirective,
 ];
 
 export function isFederationDirective(directive: GraphQLDirective): boolean {

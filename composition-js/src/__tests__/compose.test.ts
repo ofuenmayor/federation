@@ -62,7 +62,7 @@ describe('composition', () => {
 
       directive @core(feature: String!, as: String, for: core__Purpose) repeatable on SCHEMA
 
-      directive @join__field(graph: join__Graph!, requires: join__FieldSet, provides: join__FieldSet, moving: String, type: String, external: Boolean) repeatable on FIELD_DEFINITION | INPUT_FIELD_DEFINITION
+      directive @join__field(graph: join__Graph!, requires: join__FieldSet, provides: join__FieldSet, type: String, external: Boolean) repeatable on FIELD_DEFINITION | INPUT_FIELD_DEFINITION
 
       directive @join__graph(name: String!, url: String!) on ENUM_VALUE
 
