@@ -124,21 +124,15 @@ export const hintInconsistentArgumentPresence = new HintID(
   'the argument with mismatched types'
 );
 
-export const hintDestinationSubgraphDoesNotExist = new HintID(
-  'DestinationSubgraphDoesNotExist',
-  'Destination subgraph specified with @moving directive does not exist',
+export const hintFromSubgraphDoesNotExist = new HintID(
+  'FromSubgraphDoesNotExist',
+  'Source subgraph specified by @moved directive does not exist',
   'the argument with non-existent subgraph'
 );
 
-export const hintMovedFieldCanBeRemoved = new HintID(
-  'MovedFieldCanBeRemoved',
-  'Field with @moving directive exists in destination subgraph, it can be safely removed',
-  'the moved field'
-);
-
-export const hintMovedToCannotReferenceSelf = new HintID(
-  'MovedToCannotReferenceSelf',
-  'Field with @moving directive must reference a different subgraph other than the one it is defined in',
+export const hintMovedDirectiveCanBeRemoved = new HintID(
+  'MovedDirectiveCanBeRemoved',
+  'Field with @moved directive no longer exists in source subgraph, the directive can be safely removed',
   'the moved field'
 );
 

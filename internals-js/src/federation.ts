@@ -63,7 +63,7 @@ export const extendsDirectiveName = 'extends';
 export const externalDirectiveName = 'external';
 export const requiresDirectiveName = 'requires';
 export const providesDirectiveName = 'provides';
-export const movingDirectiveName = 'moving';
+export const movedDirectiveName = 'moved';
 
 // TODO: so far, it seems we allow tag to appear without a corresponding definition, so we add it as a built-in.
 // If we change our mind, we should change this.
@@ -93,7 +93,7 @@ const FEDERATION_DIRECTIVES = [
   requiresDirectiveName,
   providesDirectiveName,
   tagDirectiveName,
-  movingDirectiveName,
+  movedDirectiveName,
 ];
 const FEDERATION_ROOT_FIELDS = [
   serviceFieldName,
@@ -401,9 +401,9 @@ export class FederationBuiltIns extends BuiltIns {
     const directive = this.addBuiltInDirective({ schema, name: 'tag' }).addLocations(...tagLocations);
     directive.addArgument("name", new NonNullType(schema.stringType()));
 
-    this.addBuiltInDirective({ schema, name: movingDirectiveName, requireJoin: true })
+    this.addBuiltInDirective({ schema, name: movedDirectiveName, requireJoin: true })
       .addLocations(DirectiveLocation.FIELD_DEFINITION)
-      .addArgument("to", new NonNullType(schema.stringType()));
+      .addArgument("from", new NonNullType(schema.stringType()));
   }
 
   prepareValidation(schema: Schema) {
@@ -595,8 +595,8 @@ export class FederationBuiltIns extends BuiltIns {
     return this.getTypedDirective(schema, tagDirectiveName);
   }
 
-  movingDirective(schema: Schema): DirectiveDefinition<{to: any}> {
-    return this.getTypedDirective(schema, movingDirectiveName);
+  movedDirective(schema: Schema): DirectiveDefinition<{to: any}> {
+    return this.getTypedDirective(schema, movedDirectiveName);
   }
 
   maybeUpdateSubgraphDocument(schema: Schema, document: DocumentNode): DocumentNode {
