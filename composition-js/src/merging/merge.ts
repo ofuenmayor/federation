@@ -833,8 +833,7 @@ class Merger {
    * return a list of subgraphs to ignore for the current field
    */
   private validateMoved(sources: (FieldDefinition<any> | undefined)[], { coordinate }: FieldDefinition<any>): string[] {
-    // For now, assume that @moving and @shareable are incompatible
-    // For any field, we can't have more than one @moving directive in any subgraph
+    // For any field, we can't have more than one @moving directive
     type MappedValue = {
       idx: number,
       name: string,

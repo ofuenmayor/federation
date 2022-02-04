@@ -403,7 +403,7 @@ export class FederationBuiltIns extends BuiltIns {
 
     this.addBuiltInDirective(schema, movedDirectiveName)
       .addLocations(DirectiveLocation.FIELD_DEFINITION)
-      .addArgument("from", new NonNullType(schema.stringType()));
+      .addArgument('from', new NonNullType(schema.stringType()));
   }
 
   prepareValidation(schema: Schema) {

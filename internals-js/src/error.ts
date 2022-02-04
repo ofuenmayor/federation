@@ -276,7 +276,7 @@ const SATISFIABILITY_ERROR = makeCodeDefinition(
 
 const MOVED_FROM_SELF_ERROR = makeCodeDefinition(
   'MOVED_FROM_SELF_ERROR',
-  'From location of field with `@moving` directive is its own subgraph.',
+  'From location of field with `@moved` directive is its own subgraph.',
 );
 
 const MOVED_SOURCE_IS_ALSO_MOVED_ERROR = makeCodeDefinition(
